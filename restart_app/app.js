@@ -56,40 +56,54 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-ws.on('open', async function open() {
-  await sleep(1000);
-  ws.send(createPacket("say NOTICE: We're updating the server in <color=orange>5 minutes</color>, so get to a safe spot!"));
+function restart() {
+  if (debug) console.log('RestartApp::Restarting..')
+  if (isRestarting) {
+    if (debug) console.log("RestartApp::We're already restarting..")
+    return
+  }
+  isRestarting = true
 
-  await sleep(1000 * 60);
-  ws.send(createPacket("say NOTICE: We're updating the server in <color=orange>4 minutes</color>, so get to a safe spot!"));
+  var serverHostname = 'localhost'
+  var serverPort = process.env.RUST_RCON_PORT
+  var serverPassword = process.env.RUST_RCON_PASSWORD
 
-  await sleep(1000 * 60);
-  ws.send(createPacket("say NOTICE: We're updating the server in <color=orange>3 minutes</color>, so get to a safe spot!"));
+  var WebSocket = require('ws')
+  var ws = new WebSocket('ws://' + serverHostname + ':' + serverPort + '/' + serverPassword)
+  ws.on('open', async function open() {
+    await sleep(1000);
+    ws.send(createPacket("say NOTICE: We're updating the server in <color=orange>5 minutes</color>, so get to a safe spot!"));
 
-  await sleep(1000 * 60);
-  ws.send(createPacket("say NOTICE: We're updating the server in <color=orange>2 minutes</color>, so get to a safe spot!"));
+    await sleep(1000 * 60);
+    ws.send(createPacket("say NOTICE: We're updating the server in <color=orange>4 minutes</color>, so get to a safe spot!"));
 
-  await sleep(1000 * 60);
-  ws.send(createPacket("say NOTICE: We're updating the server in <color=orange>1 minute</color>, so get to a safe spot!"));
+    await sleep(1000 * 60);
+    ws.send(createPacket("say NOTICE: We're updating the server in <color=orange>3 minutes</color>, so get to a safe spot!"));
 
-  await sleep(1000 * 60);
-  ws.send(createPacket('global.kickall <color=orange>Updating/Restarting</color>'));
+    await sleep(1000 * 60);
+    ws.send(createPacket("say NOTICE: We're updating the server in <color=orange>2 minutes</color>, so get to a safe spot!"));
 
-  await sleep(1000);
-  ws.send(createPacket('quit'));
+    await sleep(1000 * 60);
+    ws.send(createPacket("say NOTICE: We're updating the server in <color=orange>1 minute</color>, so get to a safe spot!"));
 
-  await sleep(1000);
-  ws.close(1000);
+    await sleep(1000 * 60);
+    ws.send(createPacket('global.kickall <color=orange>Updating/Restarting</color>'));
 
-  // After 2 minutes, if the server's still running, forcibly shut it down
-  await sleep(1000 * 60 * 2);
-  var fs = require('fs');
-  fs.unlinkSync('/tmp/restart_app.lock');
+    await sleep(1000);
+    ws.send(createPacket('quit'));
 
-  var childProcess = require('child_process');
-  childProcess.execSync('kill -s 2 $(pidof bash)');
-});
+    await sleep(1000);
+    ws.close(1000);
 
+    // After 2 minutes, if the server's still running, forcibly shut it down
+    await sleep(1000 * 60 * 2);
+    var fs = require('fs');
+    fs.unlinkSync('/tmp/restart_app.lock');
+
+    var childProcess = require('child_process');
+    childProcess.execSync('kill -s 2 $(pidof bash)');
+  });
+}
 
 function createPacket(command) {
   var packet =
